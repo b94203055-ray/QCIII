@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Entegris Sentry QCIII Part Number Selector</title>
+
+<style>
+body{font-family:Segoe UI;margin:0;background:#eef3f8;}
+
+.header{
+  background:#002B5C;color:white;
+  padding:15px 20px;font-size:18px;font-weight:bold;
+}
+
+.tabs{display:flex;background:#ddd;}
+.tab{padding:12px 25px;cursor:pointer;}
+.tab.active{background:white;border-bottom:3px solid #002B5C;}
+
+.container{max-width:1200px;margin:25px auto;display:flex;gap:25px;}
+
+.card{
+  flex:1;background:white;padding:25px;border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+.row{margin-bottom:18px;}
+label{display:block;font-weight:600;margin-bottom:8px;}
+
+select{
+  width:100%;
+  padding:10px;
+  border-radius:6px;border:1px solid #ccc;
+}
+
+.output{font-size:20px;font-weight:bold;margin-bottom:10px;}
+.status{font-weight:bold;}
+
+.valid{color:green;}
+.warn{color:orange;}
+.invalid{color:red;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+Entegris Sentry QCIII Part Number Selector
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="switchTab(0)">Drum Insert</div>
+<div class="tab" onclick="switchTab(1)">Dispense Head</div>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Specification</h3>
+<div id="selector"></div>
+</div>
+
+<div class="card">
+<h3>Result</h3>
+
+<div id="output" class="output">-</div>
+<div id="status" class="status"></div>
+
+<button onclick="copyPN()">Copy</button>
+
+</div>
+
+</div>
+
+<script>
+
+let mode=0;
+
+/* ================= Drum Insert ================= */
+const drum=[
+["Pipe material",[
+['DI3T','DI3T- PFA (Chaska plant)'],
+['DI3P','DI3P- PE (Chaska plant)'],
+['DI3Y','DI3Y- PE (Chaska plant, TNPP-free)'],
+['DT3P','DT3P- PE (KSP Plant, TNPP-free)']
+]],
+["Number of Ports",[['3','3-ports (No recirculation port)'],['4','4-ports (With recirculation port)']]],
+["Length code",[
+['01','For 55G composite drum'],['02','For 30G composite drum'],['03','For 15G composite drum'],
+['25','For PG1 XF/XG drum'],['29','For 200L KSP T2/T8 drum'],['1M','For 200L Chaska standard size drum'],['XX','Contact Entegris']
+]],
+["Chemical keycode",[
+['01','01-Nitric acid / Red'],
+    ['02','02-Sulfuric acid / Yellow'],
+    ['03','03-Ammonia / Green'],
+    ['04','04-Acetic acid / Brown'],
+    ['05','05-Hydrochloric acid / Blue'],
+    ['06','06-Hydrofluoric acid'],
+    ['07','07-Ammonium fluoride'],
+    ['08','08-Phosphoric acid'],
+    ['09','09-Hydrogen peroxide'],
+    ['10','10-Acetone'],
+    ['11','11-Methanol'],
+    ['12','12-Methyl isobutyl ketone'],
+    ['13','13-Isopropyl alcohol'],
+    ['98','98-Universal'],
+    ['99','99-Uncoded'],
+    ['XX','Contact Entegris']
+]],
+["Shipping Cap",[     ['0','Standard'],
+    ['3','Manual relief'],
+    ['6','Vented (H2O2)'] ]],
+["O-ring material for shipping cap",[ ['0','FEP-encapsulated Silicone'],['1','FEP-encapsulated FKM'],['2','FEP-encapsulated EPDM'] ]],
+["DI Tracking Tag",[ ['0','With serial number tag'],['1','No tag'] ]],
+["Special Instructions",[ ['00','Standard angle cut on downtube'],['01','No angle cut on downtube'] ]]
+];
+
+/* ================= Dispense Head ================= */
+const head=[
+["Ports",[['DH33','3-ports (No recirculation port)'],['DH34','4-ports (With recirculation port)']]],
+["Chemical keycode",[
+    ['01','01-Nitric acid'],
+    ['02','02-Sulfuric acid'],
+    ['03','03-Ammonia'],
+    ['04','04-Acetic acid'],
+    ['05','05-Hydrochloric acid'],
+    ['06','06-Hydrofluoric acid'],
+    ['07','07-Ammonium fluoride'],
+    ['08','08-Phosphoric acid'],
+    ['09','09-Hydrogen peroxide'],
+    ['10','10-Acetone'],
+    ['11','11-Methanol'],
+    ['12','12-Methyl isobutyl ketone'],
+    ['13','13-Isopropyl alcohol'],
+    ['99','99-Universal'],
+    ['XX','Contact Entegris']
+]],
+["O-ring material",[ ['0','FEP-encapsulated Silicone'],['1','FEP-encapsulated FKM'],['2','FEP-encapsulated EPDM'] ]],
+["Nut material",[ ['1','PVDF'],['3','PFA'],['6','CPFA'] ]],
+["Special Instructions",[ ['00','Standard'],['01','Dispense port without check valve'],['02','Recirculation port without check valve'],['03','No check valve in either dispense port or recirculation port'] ]]
+];
+
+function switchTab(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i==m));
+  render();
+}
+
+/* UI render */
+function render(){
+  let data=mode==0?drum:head;
+  let html='';
+
+  data.forEach((d,i)=>{
+    html+=`<div class='row'>
+      <label>${d[0]}</label>
+      <select id='S${i}'></select>
+    </div>`;
+  });
+
+  document.getElementById('selector').innerHTML=html;
+  data.forEach((d,i)=>fill(`S${i}`,d[1]));
+
+  update(); // ✅ 初始化就算一次
+}
+
+function fill(id,opts){
+  let s=document.getElementById(id);
+  s.innerHTML='';
+  opts.forEach(o=>{
+    let op=document.createElement('option');
+    op.value=o[0];
+    op.text=o[1];
+    s.appendChild(op);
+  });
+}
+
+/* ✅ 動態限制 + 即時更新 */
+function update(){
+
+  let v=i=>document.getElementById('S'+i)?.value;
+
+  if(mode==0){
+    /* DT3P 限制 */
+    if(v(0)==='DT3P'){
+      fill('S2', drum[2][1].filter(o=>o[0]=='25'||o[0]=='29'));
+      fill('S6', [['1','No tag']]);
+    }
+  }
+
+  /* PN */
+  let pn='';
+  if(mode==0){
+    pn=v(0)+v(1)+'-'+v(2)+'-'+v(3)+'-'+v(4)+v(5)+v(6)+'-'+v(7);
+  }else{
+    pn=v(0)+'-'+v(1)+'-'+v(2)+'-00-'+v(3)+v(4);
+  }
+
+  document.getElementById('output').innerText=pn;
+
+  /* ✅ 狀態判斷 */
+  let statusEl=document.getElementById('status');
+
+  if(pn.includes('XX')){
+    statusEl.innerText='⚠ Contact Entegris required';
+    statusEl.className='status warn';
+  }else{
+    statusEl.innerText='✔ Valid configuration';
+    statusEl.className='status valid';
+  }
+}
+
+/* 事件 */
+document.addEventListener('change', update);
+
+function copyPN(){
+  let t=document.getElementById('output').innerText;
+  navigator.clipboard.writeText(t);
+  alert('Copied: '+t);
+}
+
+render();
+
+</script>
+
+</body>
+</html>
