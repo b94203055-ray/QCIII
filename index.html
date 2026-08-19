@@ -13,9 +13,39 @@ body{font-family:Segoe UI;margin:0;background:#eef3f8;}
   padding:15px 20px;font-size:18px;font-weight:bold;
 }
 
-.tabs{display:flex;background:#ddd;}
-.tab{padding:12px 25px;cursor:pointer;}
-.tab.active{background:white;border-bottom:3px solid #002B5C;}
+.tabs{
+  display:flex;
+  gap:5px;
+  padding:8px;
+  background:#e5e5e5;
+}
+
+.tab{
+  padding:12px 25px;
+  cursor:pointer;
+  border-radius:8px 8px 0 0;
+  transition:all .2s ease;
+}
+
+/* Drum Insert */
+.drum-tab.active{
+  background:linear-gradient(
+    135deg,
+    #0078D4,
+    #005A9E
+  );
+  color:white;
+}
+
+/* Dispense Head */
+.head-tab.active{
+  background:linear-gradient(
+    135deg,
+    #28A745,
+    #1E7E34
+  );
+  color:white;
+}
 
 .container{max-width:1200px;margin:25px auto;display:flex;gap:25px;align-items: flex-start;}
 
@@ -60,8 +90,13 @@ Entegris Sentry QCIII Part Number Selector
 </div>
 
 <div class="tabs">
-<div class="tab active" onclick="switchTab(0)">Drum Insert</div>
-<div class="tab" onclick="switchTab(1)">Dispense Head</div>
+  <div class="tab drum-tab active" onclick="switchTab(0)">
+    Drum Insert
+  </div>
+
+  <div class="tab head-tab" onclick="switchTab(1)">
+    Dispense Head
+  </div>
 </div>
 
 <div class="container">
