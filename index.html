@@ -296,19 +296,89 @@ if(mode==0){
     pn=v(0)+'-'+v(1)+'-'+v(2)+'-00-'+v(3)+v(4);
   }
 
-  document.getElementById('output').innerText=pn;
+document.getElementById('output').innerText = pn;
 
-  let statusEl=document.getElementById('status');
+let statusEl =
+    document.getElementById('status');
 
-  updateHeadRecommendation();
+/* 檢查是否有未完成選擇 */
 
-  if(pn.includes('XX')){
-    statusEl.innerText='⚠ Contact Entegris required';
-    statusEl.className='status warn';
-  }else{
-    statusEl.innerText='✔ Valid configuration';
-    statusEl.className='status valid';
-  }
+let incomplete = false;
+
+if(mode==0){
+
+    for(let i=0;i<drum.length;i++){
+
+        let obj =
+            document.getElementById('S'+i);
+
+        if(!obj || obj.value === ''){
+
+            incomplete = true;
+            break;
+
+        }
+
+    }
+
+}
+else{
+
+    for(let i=0;i<head.length;i++){
+
+        let obj =
+            document.getElementById('S'+i);
+
+        if(!obj || obj.value === ''){
+
+            incomplete = true;
+            break;
+
+        }
+
+    }
+
+}
+
+/* 先清空 Recommendation */
+
+document.getElementById("headRecommend").innerHTML = '';
+
+if(incomplete){
+
+    statusEl.innerText =
+        '⚠ Please complete all selections';
+
+    statusEl.className =
+        'status warn';
+
+}
+else if(pn.includes('XX')){
+
+    statusEl.innerText =
+        '⚠ Contact Entegris required';
+
+    statusEl.className =
+        'status warn';
+
+}
+else{
+
+    statusEl.innerText =
+        '✔ Valid configuration';
+
+    statusEl.className =
+        'status valid';
+
+    /* 只有有效配置才顯示推薦 */
+
+    if(mode === 0){
+
+        updateHeadRecommendation();
+
+    }
+
+}
 }
 
 /* 事件 */
@@ -329,6 +399,7 @@ function updateHeadRecommendation(){
     let pipe      = document.getElementById('S0')?.value;
     let ports     = document.getElementById('S1')?.value;
     let keycode   = document.getElementById('S3')?.value;
+    let oRingCode = document.getElementById('S5')?.value;
 
     if(!pipe || !ports || !keycode){
 
@@ -338,12 +409,26 @@ function updateHeadRecommendation(){
         return;
     }
 
+let oRingText = '';
+  
+if(oRingCode === '0'){
+    oRingText = 'FEP-encapsulated Silicone';
+}
+else if(oRingCode === '1'){
+    oRingText = 'FEP-encapsulated FKM';
+}
+else if(oRingCode === '2'){
+    oRingText = 'FEP-encapsulated EPDM';
+}
+
     let headPN =
         'DH3' +
         ports +
         '-' +
         keycode +
-        '-3-000';
+        '-3-' +
+        oRingCode +
+        '00';
 
 document.getElementById("headRecommend").innerHTML =
 `
@@ -366,6 +451,7 @@ document.getElementById("headRecommend").innerHTML =
   Ports: ${ports}-ports<br>
   Chemical keycode: ${keycode}<br>
   Nut material: PFA<br>
+  O-ring material: ${oRingText}<br>
 </div>
 
 </div>
